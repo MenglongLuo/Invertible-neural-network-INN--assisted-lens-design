@@ -19,7 +19,7 @@ target_ver_div = 4.22
 target_steer = 50.2
 target_hor_div = target_steer / 15 * 0.23
 
-### 0 = lens V and 1 = lens H
+### 0, 1, 2, 3 = lens V and 4, 5 = lens H
 start_time = time.time()
 
 if d.lens in [0, 1, 2, 3]:
@@ -29,7 +29,7 @@ elif d.lens in [4, 5]:
     
 y_transform = d.scaler_y.transform([y_target])
 
-## Number of the generated samples. Here we set a large number and average the samples to make the result more scientific.
+## Number of the generated samples (lens parameters). We set a large number and average the generated lens parameters to make the result more scientific.
 
 n_samps = 10000
 y_fix = np.zeros((n_samps, len(y_target))) + y_transform
@@ -66,7 +66,7 @@ print("Elapsed time：", elapsed_time, ' s')
 def absolute_percentage_error(target, prediction):
     return abs((target - prediction) / target) * 100
 
-### LightTools ###
+### Check the generated samples in LightTools ###
 
 # Create the LightTools application object
 lt = win32com.client.Dispatch('LightTools.LTAPI4')

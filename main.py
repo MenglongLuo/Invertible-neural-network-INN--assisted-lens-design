@@ -38,17 +38,15 @@ def train_epoch():
         train_mmd_x_loss = 0
 
         model.model.train()
-        # If MMD on x-space is present from the start, the model can get stuck.
-        # Instead, ramp it up exponetially.
+
         loss_factor = min(1., 2. * 0.002 ** (1. - (float(epoch) / c.n_epochs)))
 
         train_loss_history = []
         for j, (x, y) in enumerate(train_loader):
             batch_losses = []
             x, y = x.to(c.device), y.to(c.device)
-            #  data pad cat     #
-            ######################
-            # x_pad and new x, ndim = x_pad + x
+            
+            #  data pad cat #
             x_pad = c.add_pad_noise * torch.randn(c.batch_size, c.ndim_pad_x).to(c.device)
             x = torch.cat((x, x_pad), dim=1)
 
@@ -57,9 +55,7 @@ def train_epoch():
             z_pad = torch.randn(c.batch_size, c.ndim_z).to(c.device)
             y = torch.cat((z_pad, yz_pad, y), dim=1)
 
-            ######################
-            #  Forward step      #
-            ######################
+            #  Forward step  #
             model.optim.zero_grad()
             out_y = model.model(x)[0]
             out_x = model.model(y, rev=True)[0]
@@ -78,7 +74,6 @@ def train_epoch():
 
             loss_total = sum(batch_losses)
             train_loss_history.append([l.item() for l in batch_losses])
-            # print('training losses', np.mean(loss_history, axis=0))
 
             # original y and x
             mse_y_loss = losses.l2_fit(out_y[:, -c.ndim_y:], y[:, -c.ndim_y:])
@@ -104,9 +99,6 @@ def train_epoch():
         train_avg_mse_y_loss = train_mse_y_loss.cpu().data.numpy() / (j + 1)
         train_avg_mmd_x_loss = train_mmd_x_loss.cpu().data.numpy() / (j + 1)
 
-        # print(np.shape(train_avg_mmd_x_loss)) # batch_size x batch_size
-        # print('training', np.mean(loss_history, axis=0))
-
         if epoch % c.eval_test == 0:
             model.model.eval()
             print("Doing Testing evaluation on the model now")
@@ -123,22 +115,18 @@ def train_epoch():
 
                 x, y = Variable(x).to(c.device), Variable(y).to(c.device)
 
-                ######################
-                #  data pad cat     #
-                ######################
-                # x_pad and new x, ndim = x_pad + x
+                #  data pad cat #
                 x_pad = c.add_pad_noise * torch.randn(c.batch_size, c.ndim_pad_x).to(c.device)
                 x = torch.cat((x, x_pad), dim=1)
 
                 # yz_pad，z_pad,y
                 yz_pad = c.add_pad_noise * torch.randn(c.batch_size, c.ndim_pad_zy).to(c.device)
-                # print('yz_pad',yz_pad)
+                
                 z_pad = torch.randn(c.batch_size, c.ndim_z).to(c.device)
                 y = torch.cat((z_pad, yz_pad, y), dim=1)
 
-                ######################
-                #  Forward step      #
-                ######################
+                # Forward step #
+
                 model.optim.zero_grad()
                 out_y = model.model(x)[0]
                 out_x = model.model(y, rev=True)[0]
@@ -157,21 +145,16 @@ def train_epoch():
 
                 loss_total = sum(batch_losses)
                 test_loss_history.append([l.item() for l in batch_losses])
-                # print('loss_total', loss_total)
-                # print('testing losses',np.mean(loss_history, axis=0))
+                
 
                 # original y and x
                 mse_y_loss = losses.l2_fit(out_y[:, -c.ndim_y:], y[:, -c.ndim_y:])
                 mmd_x_loss = torch.mean(losses.backward_mmd(x[:, :c.ndim_x], out_x[:, :c.ndim_x]))
 
                 # MLE training
-                # print(loss_total)
                 test_loss += loss_total
                 test_mse_y_loss += mse_y_loss
                 test_mmd_x_loss += mmd_x_loss
-
-            # print('true', x[0, :c.ndim_x])
-            # print('generate', out_x[0, :c.ndim_x])
 
             # Calculate the avg loss of training
             test_avg_loss = test_loss.cpu().data.numpy() / (j + 1)
